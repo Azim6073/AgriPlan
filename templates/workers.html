@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Worker Management — AgriPlan{% endblock %}
+{% block page_title %}Farm Labor & Worker Management{% endblock %}
+{% block page_subtitle %}Manage farm hands, machine operators, skillsets, and shift assignments{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div>
+    <span class="badge badge-completed">{{ workers|length }} Active Workers Registered</span>
+  </div>
+  <button type="button" class="btn btn-primary" onclick="openModal('addWorkerModal')">
+    <span>+</span> Add New Worker
+  </button>
+</div>
+
+{% if workers %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+  {% for w in workers %}
+  <div class="card">
+    <div class="card-header" style="background: #F8FAFC;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--light-green); color: var(--forest-green); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
+          {{ w.worker_name[0] | upper }}
+        </div>
+        <div>
+          <h3 class="card-title" style="font-size: 16px;">{{ w.worker_name }}</h3>
+          <span style="font-size: 12px; color: var(--text-muted);">&#x1F4DE; {{ w.contact or 'No contact provided' }}</span>
+        </div>
+      </div>
+      <div>
+        <span class="badge badge-{% if w.availability_status == 'Available' %}completed{% else %}pending{% endif %}">
+          {{ w.availability_status }}
+        </span>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div style="margin-bottom: 14px;">
+        <span style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px;">Skills & Capabilities</span>
+        <div style="font-size: 13px; color: var(--dark-text); font-weight: 500;">
+          {{ w.skills or 'General farm maintenance' }}
+        </div>
+      </div>
+
+      <div style="background: #F1F5F9; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+        <strong>Active Assignments:</strong> {{ w.active_task_count }} active/pending task(s)
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-light); padding-top: 12px;">
+        <button type="button" class="btn btn-sm btn-secondary" onclick="openEditWorkerModal({{ w.id }}, '{{ w.worker_name | escape }}', '{{ w.contact | escape }}', '{{ w.skills | escape }}', '{{ w.availability_status }}')">
+          Edit
+        </button>
+        <form action="{{ url_for('delete_worker', worker_id=w.id) }}" method="POST" onsubmit="return confirm('Delete worker {{ w.worker_name }}?')">
+          <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 48px 24px;">
+  <div style="font-size: 36px; margin-bottom: 12px;">&#x1F468;&#x200D;&#x1F33E;</div>
+  <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-text); margin-bottom: 8px;">No Workers Added</h3>
+  <p style="font-size: 14px; color: var(--text-muted); max-width: 400px; margin: 0 auto 20px;">
+    Add farm workers and equipment operators to track assignments and prevent double bookings.
+  </p>
+  <button type="button" class="btn btn-primary" onclick="openModal('addWorkerModal')">
+    + Add First Worker
+  </button>
+</div>
+{% endif %}
+
+<!-- Add Worker Modal -->
+<div class="modal-overlay" id="addWorkerModal">
+  <div class="modal-content">
+    <form action="{{ url_for('add_worker') }}" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Register Farm Worker</h3>
+        <button type="button" class="modal-close" onclick="closeModal('addWorkerModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Worker Name *</label>
+          <input type="text" name="worker_name" class="form-control" required placeholder="e.g. Ramesh Kumar">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone / Contact Details</label>
+          <input type="text" name="contact" class="form-control" placeholder="e.g. +91 98765 43210">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Skills / Roles</label>
+          <input type="text" name="skills" class="form-control" placeholder="e.g. Tractor driving, Spraying, Drip repair">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Availability Status</label>
+          <select name="availability_status" class="form-control">
+            <option value="Available" selected>Available</option>
+            <option value="Busy">Busy</option>
+            <option value="On Leave">On Leave</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('addWorkerModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Worker</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Worker Modal -->
+<div class="modal-overlay" id="editWorkerModal">
+  <div class="modal-content">
+    <form id="editWorkerForm" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Worker Details</h3>
+        <button type="button" class="modal-close" onclick="closeModal('editWorkerModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Worker Name *</label>
+          <input type="text" name="worker_name" id="editWorkerName" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone / Contact Details</label>
+          <input type="text" name="contact" id="editWorkerContact" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Skills / Roles</label>
+          <input type="text" name="skills" id="editWorkerSkills" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Availability Status</label>
+          <select name="availability_status" id="editWorkerStatus" class="form-control">
+            <option value="Available">Available</option>
+            <option value="Busy">Busy</option>
+            <option value="On Leave">On Leave</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('editWorkerModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Worker</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditWorkerModal(id, name, contact, skills, status) {
+  document.getElementById('editWorkerForm').action = `/workers/edit/${id}`;
+  document.getElementById('editWorkerName').value = name;
+  document.getElementById('editWorkerContact').value = contact;
+  document.getElementById('editWorkerSkills').value = skills;
+  document.getElementById('editWorkerStatus').value = status;
+  openModal('editWorkerModal');
+}
+</script>
+{% endblock %}

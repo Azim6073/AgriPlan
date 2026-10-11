@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Center — AgriPlan{% endblock %}
+{% block page_title %}In-App Notification Center{% endblock %}
+{% block page_subtitle %}Live alerts on deadlines, overdue farming tasks, resource conflicts, and rescheduling events{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div>
+    <span class="badge badge-completed">{{ notifications|length }} Notifications Recorded</span>
+  </div>
+  {% if notifications %}
+  <form action="{{ url_for('mark_all_notifications_read') }}" method="POST">
+    <button type="submit" class="btn btn-secondary btn-sm">
+      &#x2713; Mark All as Read
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+{% if notifications %}
+<div style="display: flex; flex-direction: column; gap: 12px;">
+  {% for n in notifications %}
+  <div class="card notif-card {% if n.is_read %}read{% endif %}" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-left: 5px solid {% if n.notification_type in ('conflict', 'overdue') %}var(--error-red){% elif n.notification_type == 'due_today' %}var(--warning-orange){% else %}var(--success-green){% endif %}; opacity: {% if n.is_read %}0.7{% else %}1{% endif %};">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="font-size: 24px;">
+        {% if n.notification_type == 'conflict' %}
+          &#x26A0;&#xFE0F;
+        {% elif n.notification_type == 'overdue' %}
+          &#x23F0;
+        {% elif n.notification_type == 'due_today' %}
+          &#x1F4C5;
+        {% elif n.notification_type == 'success' %}
+          &#x2705;
+        {% else %}
+          &#x1F514;
+        {% endif %}
+      </div>
+      <div>
+        <div style="font-size: 14px; font-weight: 600; color: var(--dark-text);">
+          {{ n.message }}
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+          Received: {{ n.created_at }} {% if n.task_title %}&bull; Associated Task: <strong>{{ n.task_title }}</strong>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      {% if not n.is_read %}
+      <button type="button" class="btn btn-sm btn-secondary" onclick="markNotifRead({{ n.id }}, this)">
+        Mark Read
+      </button>
+      {% else %}
+      <span style="font-size: 12px; color: var(--text-light);">&#x2713; Read</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 48px 24px;">
+  <div style="font-size: 36px; margin-bottom: 12px;">&#x1F514;</div>
+  <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-text); margin-bottom: 8px;">No Notifications</h3>
+  <p style="font-size: 14px; color: var(--text-muted); max-width: 400px; margin: 0 auto;">
+    You're all caught up! New alerts regarding deadlines and resource conflicts will appear here automatically.
+  </p>
+</div>
+{% endif %}
+{% endblock %}

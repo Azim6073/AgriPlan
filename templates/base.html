@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AgriPlan — Smart Agriculture Crop Task & Field Planner{% endblock %}</title>
+  
+  <!-- Modern Typography: Inter Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+
+  <!-- Application Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if g.user %}
+<div class="app-container">
+  <!-- SIDEBAR NAVIGATION -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-icon" style="background: #FFFFFF; padding: 2px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);">
+        <img src="{{ url_for('static', filename='images/logo-icon.png') }}" alt="AgriPlan" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;">
+      </div>
+      <div class="brand-text">
+        <h1>AgriPlan</h1>
+        <span>Smart Farm Ops</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Operations</div>
+      <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+        <span class="nav-icon">&#x1F4CA;</span> Dashboard
+      </a>
+      <a href="{{ url_for('tasks') }}" class="nav-item {% if request.endpoint == 'tasks' %}active{% endif %}">
+        <span class="nav-icon">&#x2705;</span> Task Schedule
+      </a>
+      <a href="{{ url_for('calendar_view') }}" class="nav-item {% if request.endpoint == 'calendar_view' %}active{% endif %}">
+        <span class="nav-icon">&#x1F4C5;</span> Calendar & Timeline
+      </a>
+      <a href="{{ url_for('conflicts') }}" class="nav-item {% if request.endpoint == 'conflicts' %}active{% endif %}">
+        <span class="nav-icon">&#x26A0;&#xFE0F;</span> Conflicts
+        {% if g.active_conflicts_count and g.active_conflicts_count > 0 %}
+          <span class="nav-badge danger">{{ g.active_conflicts_count }}</span>
+        {% endif %}
+      </a>
+
+      <div class="nav-section-title">Farm Inventory</div>
+      <a href="{{ url_for('fields') }}" class="nav-item {% if request.endpoint == 'fields' %}active{% endif %}">
+        <span class="nav-icon">&#x1F33E;</span> Fields & Plots
+      </a>
+      <a href="{{ url_for('crops') }}" class="nav-item {% if request.endpoint == 'crops' %}active{% endif %}">
+        <span class="nav-icon">&#x1F33F;</span> Crops & Planting
+      </a>
+      <a href="{{ url_for('workers') }}" class="nav-item {% if request.endpoint == 'workers' %}active{% endif %}">
+        <span class="nav-icon">&#x1F468;&#x200D;&#x1F33E;</span> Farm Workers
+      </a>
+      <a href="{{ url_for('equipment') }}" class="nav-item {% if request.endpoint == 'equipment' %}active{% endif %}">
+        <span class="nav-icon">&#x1F69C;</span> Farm Equipment
+      </a>
+
+      <div class="nav-section-title">System</div>
+      <a href="{{ url_for('notifications') }}" class="nav-item {% if request.endpoint == 'notifications' %}active{% endif %}">
+        <span class="nav-icon">&#x1F514;</span> Notifications
+        {% if g.unread_notifs and g.unread_notifs > 0 %}
+          <span class="nav-badge">{{ g.unread_notifs }}</span>
+        {% endif %}
+      </a>
+      <a href="{{ url_for('settings') }}" class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}">
+        <span class="nav-icon">&#x2699;&#xFE0F;</span> Settings & Demo
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-snippet">
+        <div class="user-avatar">{{ g.user.name[0] | upper }}</div>
+        <div class="user-info">
+          <div class="user-name" title="{{ g.user.name }}">{{ g.user.name }}</div>
+          <div class="user-role">{{ g.user.email }}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" title="Log Out" style="color: #A0AEC0; font-size: 18px;">
+        &#x27AA;
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN WRAPPER -->
+  <main class="main-wrapper">
+    <!-- TOP NAVIGATION BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div>
+          <h2 class="page-title">{% block page_title %}Dashboard{% endblock %}</h2>
+          <div class="page-subtitle">{% block page_subtitle %}Smart Agriculture Management Platform{% endblock %}</div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Quick Action Trigger Buttons -->
+        <button type="button" class="topbar-btn" onclick="openModal('quickTaskModal')">
+          <span>+</span> Schedule Task
+        </button>
+        <button type="button" class="topbar-btn" onclick="openModal('quickFieldModal')">
+          <span>+</span> Add Field
+        </button>
+
+        <!-- Notification Bell -->
+        <a href="{{ url_for('notifications') }}" class="notif-bell" title="Notifications">
+          &#x1F514;
+          {% if g.unread_notifs and g.unread_notifs > 0 %}
+            <span class="notif-dot"></span>
+          {% endif %}
+        </a>
+      </div>
+    </header>
+
+    <!-- CONTENT BODY -->
+    <div class="content-body">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category != 'error' else 'error' }}">
+                <span>{{ message }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+
+<!-- ============================================================= -->
+<!-- GLOBAL MODALS                                                 -->
+<!-- ============================================================= -->
+
+<!-- Task Detail Inspection Modal -->
+<div class="modal-overlay" id="taskDetailModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Farming Task Details</h3>
+      <button type="button" class="modal-close" onclick="closeModal('taskDetailModal')">&times;</button>
+    </div>
+    <div class="modal-body" id="taskDetailModalBody">
+      <!-- Filled dynamically via app.js viewTaskDetails() -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('taskDetailModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Add Field Modal -->
+<div class="modal-overlay" id="quickFieldModal">
+  <div class="modal-content">
+    <form action="{{ url_for('add_field') }}" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Add New Farm Field / Parcel</h3>
+        <button type="button" class="modal-close" onclick="closeModal('quickFieldModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Field Name *</label>
+          <input type="text" name="field_name" class="form-control" required placeholder="e.g. North Plot, Vineyard A">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Size *</label>
+            <input type="number" step="0.1" min="0.1" name="size" class="form-control" required placeholder="e.g. 10.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Area Unit</label>
+            <select name="area_unit" class="form-control">
+              <option value="acres">Acres</option>
+              <option value="hectares">Hectares</option>
+              <option value="sq. meters">Sq. Meters</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location / Parcel Coordinates</label>
+          <input type="text" name="location" class="form-control" placeholder="e.g. Sector 4, River Basin">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Soil Type</label>
+            <input type="text" name="soil_type" class="form-control" placeholder="e.g. Loamy, Sandy Loam, Clay">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Irrigation Type</label>
+            <input type="text" name="irrigation_type" class="form-control" placeholder="e.g. Drip, Sprinkler, Furrow">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Agronomic Notes</label>
+          <textarea name="notes" class="form-control" placeholder="Soil health, pH history, elevation notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('quickFieldModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Field</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Quick Schedule Task Modal -->
+<div class="modal-overlay" id="quickTaskModal">
+  <div class="modal-content">
+    <form action="{{ url_for('add_task') }}" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Schedule Farming Activity</h3>
+        <button type="button" class="modal-close" onclick="closeModal('quickTaskModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Task Title *</label>
+          <input type="text" name="title" class="form-control" required placeholder="e.g. Secondary Irrigation Cycle">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Activity Type *</label>
+            <select name="task_type" class="form-control" required>
+              <option value="Irrigation">Irrigation</option>
+              <option value="Fertilizer application">Fertilizer Application</option>
+              <option value="Pesticide or crop spraying">Pesticide / Crop Spraying</option>
+              <option value="Weeding">Weeding</option>
+              <option value="Pruning">Pruning</option>
+              <option value="Inspection">Inspection</option>
+              <option value="Harvesting">Harvesting</option>
+              <option value="Other">Other Custom Activity</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Priority</label>
+            <select name="priority" class="form-control">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Target Field *</label>
+            <select name="field_id" id="quickModalFieldSelect" class="form-control" required>
+              <!-- Filled on page or server -->
+              {% if fields %}
+                {% for f in fields %}
+                  <option value="{{ f.id }}">{{ f.field_name }}</option>
+                {% endfor %}
+              {% else %}
+                <option value="1">Field 1</option>
+              {% endif %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Crop (Optional)</label>
+            <select name="crop_id" class="form-control">
+              <option value="">-- No specific crop --</option>
+              {% if crops %}
+                {% for c in crops %}
+                  <option value="{{ c.id }}">{{ c.crop_name }}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Start Date & Time *</label>
+            <input type="datetime-local" name="start_datetime" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Date & Time *</label>
+            <input type="datetime-local" name="end_datetime" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Hard Deadline (Optional)</label>
+          <input type="datetime-local" name="deadline" class="form-control">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Assign Worker</label>
+            <select name="assigned_worker_id" class="form-control">
+              <option value="">-- Unassigned --</option>
+              {% if workers %}
+                {% for w in workers %}
+                  <option value="{{ w.id }}">{{ w.worker_name }} ({{ w.availability_status }})</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Required Equipment</label>
+            <select name="required_equipment_id" class="form-control">
+              <option value="">-- No Equipment Required --</option>
+              {% if equipment %}
+                {% for eq in equipment %}
+                  <option value="{{ eq.id }}">{{ eq.equipment_name }} ({{ eq.equipment_type }})</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Task Description</label>
+          <textarea name="description" class="form-control" placeholder="Specific instructions for workers..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('quickTaskModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Schedule Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% else %}
+<!-- Public layout for Landing / Login / Register -->
+{% block public_content %}{% endblock %}
+{% endif %}
+
+<!-- Application JavaScript -->
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

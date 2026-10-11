@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment Management — AgriPlan{% endblock %}
+{% block page_title %}Farm Machinery & Equipment{% endblock %}
+{% block page_subtitle %}Inventory tractors, irrigation pumps, sprayers, harvesters, and maintenance status{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div>
+    <span class="badge badge-completed">{{ equipment|length }} Farm Machinery Units</span>
+  </div>
+  <button type="button" class="btn btn-primary" onclick="openModal('addEquipmentModal')">
+    <span>+</span> Add Equipment
+  </button>
+</div>
+
+{% if equipment %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+  {% for eq in equipment %}
+  <div class="card">
+    <div class="card-header" style="background: #F8FAFC;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 42px; height: 42px; border-radius: var(--radius-md); background: #EDE9FE; color: var(--purple-accent); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          {% if eq.equipment_type == 'Tractor' %}
+            &#x1F69C;
+          {% elif eq.equipment_type == 'Water Pump' %}
+            &#x1F4A7;
+          {% elif eq.equipment_type == 'Sprayer' %}
+            &#x1F9DF;
+          {% else %}
+            &#x2699;&#xFE0F;
+          {% endif %}
+        </div>
+        <div>
+          <h3 class="card-title" style="font-size: 16px;">{{ eq.equipment_name }}</h3>
+          <span style="font-size: 12px; color: var(--text-muted);">ID: {{ eq.identification_number or 'N/A' }} &bull; {{ eq.equipment_type }}</span>
+        </div>
+      </div>
+      <div>
+        <span class="badge badge-{% if eq.availability_status == 'Available' %}completed{% else %}pending{% endif %}">
+          {{ eq.availability_status }}
+        </span>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div style="background: #F1F5F9; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+        <strong>Current Booking:</strong> {{ eq.active_task_count }} active/pending task(s)
+      </div>
+
+      {% if eq.maintenance_notes %}
+      <div style="margin-bottom: 14px; font-size: 13px; color: #4B5563; background: #FFFBEB; padding: 10px 12px; border-radius: 6px; border: 1px solid #FEF3C7;">
+        <span style="font-weight: 700; color: #B45309; display: block; font-size: 11px; text-transform: uppercase;">Maintenance Log:</span>
+        {{ eq.maintenance_notes }}
+      </div>
+      {% endif %}
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-light); padding-top: 12px;">
+        <button type="button" class="btn btn-sm btn-secondary" onclick="openEditEquipModal({{ eq.id }}, '{{ eq.equipment_name | escape }}', '{{ eq.equipment_type | escape }}', '{{ eq.identification_number | escape }}', '{{ eq.availability_status }}', '{{ eq.maintenance_notes | escape }}')">
+          Edit
+        </button>
+        <form action="{{ url_for('delete_equipment', equip_id=eq.id) }}" method="POST" onsubmit="return confirm('Delete equipment {{ eq.equipment_name }}?')">
+          <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 48px 24px;">
+  <div style="font-size: 36px; margin-bottom: 12px;">&#x1F69C;</div>
+  <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-text); margin-bottom: 8px;">No Farm Equipment Registered</h3>
+  <p style="font-size: 14px; color: var(--text-muted); max-width: 400px; margin: 0 auto 20px;">
+    Add tractors, pumps, and sprayers to enable automated equipment conflict detection.
+  </p>
+  <button type="button" class="btn btn-primary" onclick="openModal('addEquipmentModal')">
+    + Add First Equipment
+  </button>
+</div>
+{% endif %}
+
+<!-- Add Equipment Modal -->
+<div class="modal-overlay" id="addEquipmentModal">
+  <div class="modal-content">
+    <form action="{{ url_for('add_equipment') }}" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Register Farm Equipment</h3>
+        <button type="button" class="modal-close" onclick="closeModal('addEquipmentModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Equipment Name *</label>
+          <input type="text" name="equipment_name" class="form-control" required placeholder="e.g. John Deere 5050D Tractor">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Equipment Type *</label>
+            <select name="equipment_type" class="form-control" required>
+              <option value="Tractor">Tractor</option>
+              <option value="Water Pump">Water Pump</option>
+              <option value="Sprayer">Sprayer</option>
+              <option value="Harvester">Harvester</option>
+              <option value="Cultivator">Cultivator / Rotavator</option>
+              <option value="Other">Other Implement</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Identification / Serial Number</label>
+            <input type="text" name="identification_number" class="form-control" placeholder="e.g. TR-01 or VIN">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="availability_status" class="form-control">
+            <option value="Available" selected>Available</option>
+            <option value="In Use">In Use</option>
+            <option value="Maintenance">Maintenance</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Maintenance Notes</label>
+          <textarea name="maintenance_notes" class="form-control" placeholder="Recent servicing date, oil change, spare parts..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('addEquipmentModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Equipment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Equipment Modal -->
+<div class="modal-overlay" id="editEquipmentModal">
+  <div class="modal-content">
+    <form id="editEquipmentForm" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Equipment Details</h3>
+        <button type="button" class="modal-close" onclick="closeModal('editEquipmentModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Equipment Name *</label>
+          <input type="text" name="equipment_name" id="editEquipName" class="form-control" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Equipment Type *</label>
+            <select name="equipment_type" id="editEquipType" class="form-control" required>
+              <option value="Tractor">Tractor</option>
+              <option value="Water Pump">Water Pump</option>
+              <option value="Sprayer">Sprayer</option>
+              <option value="Harvester">Harvester</option>
+              <option value="Cultivator">Cultivator / Rotavator</option>
+              <option value="Other">Other Implement</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Identification / Serial Number</label>
+            <input type="text" name="identification_number" id="editEquipId" class="form-control">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="availability_status" id="editEquipStatus" class="form-control">
+            <option value="Available">Available</option>
+            <option value="In Use">In Use</option>
+            <option value="Maintenance">Maintenance</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Maintenance Notes</label>
+          <textarea name="maintenance_notes" id="editEquipNotes" class="form-control"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('editEquipmentModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Equipment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditEquipModal(id, name, type, ident, status, notes) {
+  document.getElementById('editEquipmentForm').action = `/equipment/edit/${id}`;
+  document.getElementById('editEquipName').value = name;
+  document.getElementById('editEquipType').value = type;
+  document.getElementById('editEquipId').value = ident;
+  document.getElementById('editEquipStatus').value = status;
+  document.getElementById('editEquipNotes').value = notes;
+  openModal('editEquipmentModal');
+}
+</script>
+{% endblock %}

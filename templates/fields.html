@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Field Management — AgriPlan{% endblock %}
+{% block page_title %}Fields & Parcels Management{% endblock %}
+{% block page_subtitle %}Manage farm parcels, boundaries, soil profiles, and irrigation systems{% endblock %}
+
+{% block content %}
+<!-- Search & Filter Controls -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+  <form action="{{ url_for('fields') }}" method="GET" style="display: flex; gap: 10px; flex: 1; max-width: 480px;">
+    <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Search field by name, location, or soil type...">
+    <button type="submit" class="btn btn-secondary">Search</button>
+    {% if search %}
+    <a href="{{ url_for('fields') }}" class="btn btn-secondary" title="Clear search">&times;</a>
+    {% endif %}
+  </form>
+
+  <button type="button" class="btn btn-primary" onclick="openModal('quickFieldModal')">
+    <span>+</span> Add New Field
+  </button>
+</div>
+
+<!-- Fields Grid -->
+{% if fields %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+  {% for f in fields %}
+  <div class="card">
+    <div class="card-header" style="background: #F8FAFC;">
+      <div>
+        <h3 class="card-title" style="font-size: 17px;">&#x1F33E; {{ f.field_name }}</h3>
+        <span style="font-size: 12px; color: var(--text-muted);">{{ f.location or 'No location coordinates' }}</span>
+      </div>
+      <div style="text-align: right;">
+        <span style="font-size: 18px; font-weight: 800; color: var(--forest-green);">{{ f.size }}</span>
+        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">{{ f.area_unit }}</span>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; margin-bottom: 14px;">
+        <div>
+          <span style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; display: block;">Soil Type</span>
+          <strong>{{ f.soil_type or 'Unspecified' }}</strong>
+        </div>
+        <div>
+          <span style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; display: block;">Irrigation</span>
+          <strong>{{ f.irrigation_type or 'None' }}</strong>
+        </div>
+      </div>
+
+      <!-- Associated Crops -->
+      <div style="background: #F0FDF4; border: 1px solid #DCFCE7; padding: 10px 12px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 12px;">
+        <span style="font-weight: 700; color: #166534;">Active Crops ({{ f.crop_count }}):</span>
+        <span style="color: #374151;">{{ f.crop_names or 'No crops planted yet.' }}</span>
+      </div>
+
+      {% if f.notes %}
+      <p style="font-size: 13px; color: #4B5563; margin-bottom: 14px; line-height: 1.5; font-style: italic;">
+        "{{ f.notes }}"
+      </p>
+      {% endif %}
+
+      <!-- Actions -->
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-light); padding-top: 12px;">
+        <button type="button" class="btn btn-sm btn-secondary" onclick="openEditFieldModal({{ f.id }}, '{{ f.field_name | escape }}', '{{ f.location | escape }}', {{ f.size }}, '{{ f.area_unit }}', '{{ f.soil_type | escape }}', '{{ f.irrigation_type | escape }}', '{{ f.notes | escape }}')">
+          Edit
+        </button>
+        <form action="{{ url_for('delete_field', field_id=f.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this field? All associated tasks will also be deleted.')">
+          <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 48px 24px;">
+  <div style="font-size: 36px; margin-bottom: 12px;">&#x1F33E;</div>
+  <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-text); margin-bottom: 8px;">No Farm Fields Found</h3>
+  <p style="font-size: 14px; color: var(--text-muted); max-width: 400px; margin: 0 auto 20px;">
+    Start by creating your first farm parcel with its acreage, soil profile, and irrigation system.
+  </p>
+  <button type="button" class="btn btn-primary" onclick="openModal('quickFieldModal')">
+    + Add First Field
+  </button>
+</div>
+{% endif %}
+
+<!-- Edit Field Modal -->
+<div class="modal-overlay" id="editFieldModal">
+  <div class="modal-content">
+    <form id="editFieldForm" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Field Details</h3>
+        <button type="button" class="modal-close" onclick="closeModal('editFieldModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Field Name *</label>
+          <input type="text" name="field_name" id="editFieldName" class="form-control" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Size *</label>
+            <input type="number" step="0.1" min="0.1" name="size" id="editFieldSize" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Area Unit</label>
+            <select name="area_unit" id="editFieldUnit" class="form-control">
+              <option value="acres">Acres</option>
+              <option value="hectares">Hectares</option>
+              <option value="sq. meters">Sq. Meters</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location / Coordinates</label>
+          <input type="text" name="location" id="editFieldLoc" class="form-control">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Soil Type</label>
+            <input type="text" name="soil_type" id="editFieldSoil" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Irrigation Type</label>
+            <input type="text" name="irrigation_type" id="editFieldIrrig" class="form-control">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" id="editFieldNotes" class="form-control"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('editFieldModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Field</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditFieldModal(id, name, loc, size, unit, soil, irrig, notes) {
+  document.getElementById('editFieldForm').action = `/fields/edit/${id}`;
+  document.getElementById('editFieldName').value = name;
+  document.getElementById('editFieldLoc').value = loc;
+  document.getElementById('editFieldSize').value = size;
+  document.getElementById('editFieldUnit').value = unit;
+  document.getElementById('editFieldSoil').value = soil;
+  document.getElementById('editFieldIrrig').value = irrig;
+  document.getElementById('editFieldNotes').value = notes;
+  openModal('editFieldModal');
+}
+</script>
+{% endblock %}

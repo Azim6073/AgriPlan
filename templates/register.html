@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Farmer Registration — AgriPlan{% endblock %}
+
+{% block public_content %}
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #F0F9F2 0%, #FAFCF8 100%); padding: 24px;">
+  <div style="max-width: 480px; width: 100%; background: #FFFFFF; border-radius: var(--radius-xl); box-shadow: var(--shadow-xl); border: 1px solid var(--border-color); overflow: hidden;">
+    
+    <!-- Header -->
+    <div style="background: var(--forest-green); padding: 32px 28px; text-align: center; color: #FFFFFF;">
+      <div style="width: 64px; height: 64px; border-radius: var(--radius-md); background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); margin-bottom: 12px;">
+        <img src="{{ url_for('static', filename='images/logo-icon.png') }}" alt="AgriPlan Logo" style="width: 100%; height: 100%; object-fit: contain;">
+      </div>
+      <h2 style="font-size: 22px; font-weight: 800; color: #FFFFFF;">Create Farmer Account</h2>
+      <p style="font-size: 13px; color: #A7F3D0; margin-top: 4px;">Start organizing your farm operations today</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 28px;">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages" style="margin-bottom: 16px;">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category != 'error' else 'error' }}">
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form action="{{ url_for('register') }}" method="POST">
+        <div class="form-group">
+          <label class="form-label">Full Name / Farm Name *</label>
+          <input type="text" name="name" class="form-control" required placeholder="e.g. Ramesh Patil or Green Valley Farm">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input type="email" name="email" class="form-control" required placeholder="farmer@example.com">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Password *</label>
+            <input type="password" name="password" class="form-control" minlength="6" required placeholder="Min 6 characters">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password *</label>
+            <input type="password" name="confirm_password" class="form-control" minlength="6" required placeholder="Re-enter password">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">
+          Create My AgriPlan Account &rarr;
+        </button>
+      </form>
+
+      <div style="margin-top: 24px; text-align: center; font-size: 13px; color: var(--text-muted);">
+        Already registered? <a href="{{ url_for('login') }}" style="font-weight: 600; color: var(--primary-green);">Sign in here</a>
+      </div>
+      <div style="margin-top: 8px; text-align: center;">
+        <a href="{{ url_for('index') }}" style="font-size: 12px; color: var(--text-muted);">&larr; Return to Homepage</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

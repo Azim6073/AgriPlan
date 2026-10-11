@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Settings & System Demo — AgriPlan{% endblock %}
+{% block page_title %}Farmer Settings & Demo Management{% endblock %}
+{% block page_subtitle %}Manage farm profile, review future integrations, and reset demonstration scenarios{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+  <!-- Farmer Profile -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x1F468;&#x200D;&#x1F33E; Farmer Profile</h3>
+    </div>
+    <div class="card-body">
+      <form action="{{ url_for('update_profile') }}" method="POST">
+        <div class="form-group">
+          <label class="form-label">Farmer / Farm Name</label>
+          <input type="text" name="name" value="{{ g.user.name }}" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Registered Email</label>
+          <input type="email" value="{{ g.user.email }}" class="form-control" disabled style="background: #F8FAFC;">
+          <small style="color: var(--text-muted); font-size: 11px;">Email cannot be changed.</small>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 8px;">
+          Update Profile Name
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hackathon Demo Controller -->
+  <div class="card" style="border: 2px solid #86EFAC;">
+    <div class="card-header" style="background: #F0FDF4; display: flex; align-items: center; justify-content: space-between;">
+      <h3 class="card-title" style="color: #166534; display: flex; align-items: center; gap: 8px;">
+        <img src="{{ url_for('static', filename='images/logo-icon.png') }}" alt="AgriPlan" style="width: 22px; height: 22px; object-fit: contain;">
+        Hackathon Demo Reset Tool
+      </h3>
+      <span class="badge badge-completed">Team NEXMIND</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 13px; color: #374151; line-height: 1.5; margin-bottom: 16px;">
+        Use this button to restore the demo account with the 6 official hackathon demonstration scenarios:
+      </p>
+
+      <ul style="font-size: 12px; color: var(--text-muted); padding-left: 20px; margin-bottom: 18px; line-height: 1.7;">
+        <li><strong>Scenario 1:</strong> Normal scheduling (Wheat Drip Irrigation).</li>
+        <li><strong>Scenario 2:</strong> Worker Double-Booking (Worker A assigned to Spraying & Cultivation).</li>
+        <li><strong>Scenario 3:</strong> Equipment Conflict (Water Pump booked for Sprinkler & Furrow).</li>
+        <li><strong>Scenario 4:</strong> Dependency Violation (Fertilizer scheduled before Tilling completes).</li>
+        <li><strong>Scenario 5:</strong> Overdue Task & Smart Rescheduling suggestions.</li>
+        <li><strong>Scenario 6:</strong> Completed task history & dashboard metrics update.</li>
+      </ul>
+
+      <form action="{{ url_for('reset_demo') }}" method="POST" onsubmit="return confirm('Reset demonstration data to default hackathon scenarios?')">
+        <button type="submit" class="btn btn-primary" style="width: 100%; background: #166534; border-color: #166534;">
+          &#x21BA; Reset Demonstration Scenarios Now
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Future Weather Integration Architecture Section -->
+<div class="card" style="margin-top: 28px;">
+  <div class="card-header" style="background: #F8FAFC;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h3 class="card-title">&#x2601;&#xFE0F; Weather Integration (Future Architecture)</h3>
+      <span class="badge badge-pending">Future-Ready Placeholder</span>
+    </div>
+  </div>
+  <div class="card-body">
+    <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 14px 18px; border-radius: var(--radius-sm); margin-bottom: 18px; font-size: 13px; color: #1E40AF; line-height: 1.5;">
+      <strong>Note on Hackathon Scope:</strong> In accordance with the project specification (Section 17), the current scheduling and conflict detection engine is completely independent of weather data. This configuration interface demonstrates how a third-party weather API (e.g. Open-Meteo, IMD API) will seamlessly integrate into the next release.
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; opacity: 0.85;">
+      <div class="form-group">
+        <label class="form-label">Weather Provider API Key</label>
+        <input type="text" class="form-control" placeholder="Enter API Key (e.g. openmeteo_live_...)" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Farm Weather Station Coordinates</label>
+        <input type="text" class="form-control" value="15.8497° N, 74.4977° E (Belagavi / Hubli Region)" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rain Delay Buffer Threshold</label>
+        <select class="form-control" disabled>
+          <option>Postpone spraying if rain probability &gt; 60%</option>
+          <option>Postpone harvesting if rain probability &gt; 40%</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

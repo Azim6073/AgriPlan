@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Crop Management — AgriPlan{% endblock %}
+{% block page_title %}Crops & Planting Lifecycle{% endblock %}
+{% block page_subtitle %}Track crop sowing dates, varieties, expected harvest schedules, and field allocations{% endblock %}
+
+{% block content %}
+<!-- Filter & Add Button -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+  <form action="{{ url_for('crops') }}" method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+    <select name="field_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+      <option value="">All Fields</option>
+      {% for f in fields %}
+        <option value="{{ f.id }}" {% if selected_field == f.id|string %}selected{% endif %}>{{ f.field_name }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      <option value="Sown" {% if selected_status == 'Sown' %}selected{% endif %}>Sown</option>
+      <option value="Growing" {% if selected_status == 'Growing' %}selected{% endif %}>Growing</option>
+      <option value="Flowering" {% if selected_status == 'Flowering' %}selected{% endif %}>Flowering</option>
+      <option value="Ready for Harvest" {% if selected_status == 'Ready for Harvest' %}selected{% endif %}>Ready for Harvest</option>
+      <option value="Harvested" {% if selected_status == 'Harvested' %}selected{% endif %}>Harvested</option>
+    </select>
+
+    {% if selected_field or selected_status %}
+    <a href="{{ url_for('crops') }}" class="btn btn-secondary">Reset Filters</a>
+    {% endif %}
+  </form>
+
+  <button type="button" class="btn btn-primary" onclick="openModal('addCropModal')">
+    <span>+</span> Add New Crop
+  </button>
+</div>
+
+<!-- Crops Table / Cards -->
+{% if crops %}
+<div class="table-responsive">
+  <table class="custom-table">
+    <thead>
+      <tr>
+        <th>Crop & Variety</th>
+        <th>Field Parcel</th>
+        <th>Sowing Date</th>
+        <th>Expected Harvest</th>
+        <th>Status</th>
+        <th>Notes</th>
+        <th style="text-align: right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in crops %}
+      <tr>
+        <td>
+          <div style="font-weight: 700; color: var(--dark-text); font-size: 15px;">&#x1F33F; {{ c.crop_name }}</div>
+          <div style="font-size: 12px; color: var(--text-muted);">{{ c.variety or 'Standard Variety' }}</div>
+        </td>
+        <td>
+          <span style="font-weight: 600; color: var(--forest-green);">{{ c.field_name }}</span>
+          <span style="font-size: 11px; color: var(--text-muted); display: block;">({{ c.field_size }} {{ c.area_unit }})</span>
+        </td>
+        <td>{{ c.sowing_date }}</td>
+        <td>
+          <strong>{{ c.expected_harvest_date }}</strong>
+        </td>
+        <td>
+          <span class="badge badge-{% if c.status == 'Growing' %}in-progress{% elif c.status == 'Harvested' %}completed{% else %}pending{% endif %}">
+            {{ c.status }}
+          </span>
+        </td>
+        <td style="max-width: 220px; font-size: 13px; color: #4B5563;">
+          {{ c.notes or '—' }}
+        </td>
+        <td style="text-align: right;">
+          <div style="display: inline-flex; gap: 6px;">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="openEditCropModal({{ c.id }}, '{{ c.crop_name | escape }}', {{ c.field_id }}, '{{ c.variety | escape }}', '{{ c.sowing_date }}', '{{ c.expected_harvest_date }}', '{{ c.status }}', '{{ c.notes | escape }}')">
+              Edit
+            </button>
+            <form action="{{ url_for('delete_crop', crop_id=c.id) }}" method="POST" onsubmit="return confirm('Delete crop {{ c.crop_name }}?')">
+              <button type="submit" class="btn btn-sm btn-danger">&times;</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 48px 24px;">
+  <div style="font-size: 36px; margin-bottom: 12px;">&#x1F33F;</div>
+  <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-text); margin-bottom: 8px;">No Crops Recorded</h3>
+  <p style="font-size: 14px; color: var(--text-muted); max-width: 400px; margin: 0 auto 20px;">
+    Add the crops currently planted or planned across your fields to organize schedules.
+  </p>
+  <button type="button" class="btn btn-primary" onclick="openModal('addCropModal')">
+    + Add First Crop
+  </button>
+</div>
+{% endif %}
+
+<!-- Add Crop Modal -->
+<div class="modal-overlay" id="addCropModal">
+  <div class="modal-content">
+    <form action="{{ url_for('add_crop') }}" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Crop Planting</h3>
+        <button type="button" class="modal-close" onclick="closeModal('addCropModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Crop Name *</label>
+            <input type="text" name="crop_name" class="form-control" required placeholder="e.g. Wheat, Tomato, Maize">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Variety (Optional)</label>
+            <input type="text" name="variety" class="form-control" placeholder="e.g. HD-2967, Arka Rakshak">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Target Field *</label>
+          <select name="field_id" class="form-control" required>
+            {% for f in fields %}
+              <option value="{{ f.id }}">{{ f.field_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Sowing Date *</label>
+            <input type="date" name="sowing_date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Expected Harvest Date *</label>
+            <input type="date" name="expected_harvest_date" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-control">
+            <option value="Sown">Sown</option>
+            <option value="Growing" selected>Growing</option>
+            <option value="Flowering">Flowering</option>
+            <option value="Ready for Harvest">Ready for Harvest</option>
+            <option value="Harvested">Harvested</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" class="form-control" placeholder="Fertilizer schedule, seed treatment notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('addCropModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Crop</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Crop Modal -->
+<div class="modal-overlay" id="editCropModal">
+  <div class="modal-content">
+    <form id="editCropForm" method="POST">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Crop Lifecycle</h3>
+        <button type="button" class="modal-close" onclick="closeModal('editCropModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Crop Name *</label>
+            <input type="text" name="crop_name" id="editCropName" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Variety</label>
+            <input type="text" name="variety" id="editCropVariety" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Field *</label>
+          <select name="field_id" id="editCropFieldId" class="form-control" required>
+            {% for f in fields %}
+              <option value="{{ f.id }}">{{ f.field_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Sowing Date *</label>
+            <input type="date" name="sowing_date" id="editCropSowDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Expected Harvest Date *</label>
+            <input type="date" name="expected_harvest_date" id="editCropHarvDate" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="status" id="editCropStatus" class="form-control">
+            <option value="Sown">Sown</option>
+            <option value="Growing">Growing</option>
+            <option value="Flowering">Flowering</option>
+            <option value="Ready for Harvest">Ready for Harvest</option>
+            <option value="Harvested">Harvested</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" id="editCropNotes" class="form-control"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('editCropModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Crop</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditCropModal(id, name, fieldId, variety, sowDate, harvDate, status, notes) {
+  document.getElementById('editCropForm').action = `/crops/edit/${id}`;
+  document.getElementById('editCropName').value = name;
+  document.getElementById('editCropFieldId').value = fieldId;
+  document.getElementById('editCropVariety').value = variety;
+  document.getElementById('editCropSowDate').value = sowDate;
+  document.getElementById('editCropHarvDate').value = harvDate;
+  document.getElementById('editCropStatus').value = status;
+  document.getElementById('editCropNotes').value = notes;
+  openModal('editCropModal');
+}
+</script>
+{% endblock %}

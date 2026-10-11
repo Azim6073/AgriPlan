@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}AgriPlan — Plan Smarter. Farm Better.{% endblock %}
+
+{% block public_content %}
+<div class="landing-page">
+  <!-- Top Navigation Header -->
+  <header style="background: #FFFFFF; border-bottom: 1px solid var(--border-color); padding: 18px 36px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="{{ url_for('static', filename='images/logo-icon.png') }}" alt="AgriPlan Logo" style="width: 44px; height: 44px; object-fit: contain; border-radius: 10px; background: #FFFFFF; padding: 2px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+      <div>
+        <h1 style="font-size: 20px; font-weight: 800; color: var(--forest-green); letter-spacing: -0.5px; line-height: 1.1;">AgriPlan</h1>
+        <span style="font-size: 11px; font-weight: 600; color: var(--primary-green); text-transform: uppercase;">Team NEXMIND &bull; PS-19</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <a href="{{ url_for('login') }}" class="btn btn-secondary">Farmer Login</a>
+      <a href="{{ url_for('register') }}" class="btn btn-primary">Create Free Account</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="landing-hero">
+    <div style="margin-bottom: 20px;">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AgriPlan Logo" style="width: 140px; height: 140px; object-fit: contain; border-radius: 24px; background: #FFFFFF; padding: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.8);">
+    </div>
+    <div class="hero-tag">
+      <span>&#x26A1;</span> Smart Farm Task & Field Planner Engine
+    </div>
+    <h1 class="hero-title">Plan Smarter. Farm Better.</h1>
+    <p class="hero-subtitle">
+      Coordinate irrigation, spraying, fertilizer application, and harvesting across all your fields without worker conflicts, equipment bottlenecks, or missed deadlines.
+    </p>
+
+    <div class="hero-cta">
+      <a href="{{ url_for('login') }}" class="btn btn-lg" style="background: #A7F3D0; color: #064E3B; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.2);">
+        &#x1F680; Launch Demo Account
+      </a>
+      <a href="{{ url_for('register') }}" class="btn btn-lg" style="background: rgba(255,255,255,0.15); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px);">
+        Register New Farm &rarr;
+      </a>
+    </div>
+
+    <!-- Hackathon Demo Credentials Pill -->
+    <div style="margin-top: 32px; display: inline-flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.25); padding: 8px 18px; border-radius: 20px; font-size: 13px; color: #E2E8F0;">
+      <span>&#x1F511; Demo Login:</span>
+      <strong style="color: #A7F3D0;">demo@agriplan.com</strong>
+      <span>|</span>
+      <span>Password:</span>
+      <strong style="color: #A7F3D0;">demo123</strong>
+    </div>
+  </section>
+
+  <!-- Feature Cards -->
+  <section class="landing-section">
+    <div class="section-header">
+      <h2 class="section-title">Built Specifically for Modern Farmers</h2>
+      <p class="section-subtitle">
+        Eliminate the chaos of spreadsheets and whiteboards. AgriPlan brings field management, labor scheduling, and equipment allocation into one unified platform.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Feature 1 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">&#x1F33E;</div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--dark-text);">Field & Crop Management</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          Map multiple plots, record soil varieties, irrigation types, and track crop growth cycles from sowing to harvest.
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">&#x26A0;&#xFE0F;</div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--dark-text);">Conflict Detection Engine</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          Automatically flags overlapping worker shifts, double-booked tractors or water pumps, and tasks scheduled past their critical deadlines.
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">&#x1F9E9;</div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--dark-text);">Task Dependency Rules</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          Enforce agronomic sequences (e.g. soil tilling must complete before fertilizer application). Detects and rejects circular dependencies.
+        </p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">&#x26A1;</div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--dark-text);">Smart Rescheduling Engine</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          When delays occur, AgriPlan calculates optimal non-conflicting time slots with transparent reasoning and allows 1-click schedule updates.
+        </p>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">&#x1F4C5;</div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--dark-text);">Interactive Farm Calendar</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          Inspect farm operations across Monthly, Weekly, and Daily views with interactive filters and live status color-coding.
+        </p>
+      </div>
+
+      <!-- Feature 6 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">&#x1F4CA;</div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--dark-text);">Live Operations Dashboard</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          Instant overview of tasks due today, overdue alerts, crop acreage distribution charts, and in-app notifications.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section style="background: #F8FAFC; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 80px 24px;">
+    <div style="max-width: 1100px; margin: 0 auto;">
+      <div class="section-header">
+        <h2 class="section-title">How AgriPlan Streamlines Your Farm</h2>
+        <p class="section-subtitle">A transparent, rule-driven workflow built for reliability in the field.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
+        <div style="background: #FFFFFF; padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-size: 24px; font-weight: 800; color: var(--primary-green); margin-bottom: 10px;">01</div>
+          <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Register Fields & Assets</h4>
+          <p style="font-size: 13px; color: var(--text-muted);">Add your field parcels, active crops, farm workers, and equipment like tractors and sprayers.</p>
+        </div>
+
+        <div style="background: #FFFFFF; padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-size: 24px; font-weight: 800; color: var(--primary-green); margin-bottom: 10px;">02</div>
+          <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Schedule Farming Tasks</h4>
+          <p style="font-size: 13px; color: var(--text-muted);">Assign dates, workers, equipment, and prerequisites for irrigation, weeding, fertilizing, or spraying.</p>
+        </div>
+
+        <div style="background: #FFFFFF; padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-size: 24px; font-weight: 800; color: var(--primary-green); margin-bottom: 10px;">03</div>
+          <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Automated Conflict Check</h4>
+          <p style="font-size: 13px; color: var(--text-muted);">Our Python scheduling engine validates resource overlaps, prerequisite delays, and deadline feasibility in real time.</p>
+        </div>
+
+        <div style="background: #FFFFFF; padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-size: 24px; font-weight: 800; color: var(--primary-green); margin-bottom: 10px;">04</div>
+          <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Resolve & Track Progress</h4>
+          <p style="font-size: 13px; color: var(--text-muted);">Accept suggested alternative time slots in 1-click and track completion with instant dashboard statistics.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="background: #111827; color: #9CA3AF; padding: 48px 36px 32px; font-size: 13px; text-align: center;">
+    <div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; color: #FFFFFF;">
+        <img src="{{ url_for('static', filename='images/logo-icon.png') }}" alt="AgriPlan" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: white; padding: 2px;">
+        AgriPlan
+      </div>
+      <p style="color: #D1D5DB;">Smart Agriculture Crop Task & Field Planner &bull; Hackathon Solution PS-19</p>
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; font-size: 13px; color: #94A3B8;">
+        <span><strong>Team:</strong> NEXMIND (Team ID: CBC029)</span>
+        <span>&bull;</span>
+        <span><strong>Institution:</strong> Anuvartik Mirji Bhartesh Institute of Technology</span>
+      </div>
+      <div style="border-top: 1px solid #1F2937; width: 100%; padding-top: 20px; margin-top: 10px; color: #6B7280;">
+        &copy; 2026 AgriPlan. Built with Python, Flask, and SQLite.
+      </div>
+    </div>
+  </footer>
+</div>
+{% endblock %}

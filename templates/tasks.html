@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Task Schedule — AgriPlan{% endblock %}
+{% block page_title %}Farm Task Schedule & Tracking{% endblock %}
+{% block page_subtitle %}Plan activities, assign workers and equipment, check prerequisites, and track execution{% endblock %}
+
+{% block content %}
+<!-- Filter & Sort Bar -->
+<div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+  <form action="{{ url_for('tasks') }}" method="GET" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
+    <select name="field_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+      <option value="">All Fields</option>
+      {% for f in fields %}
+        <option value="{{ f.id }}" {% if selected_field == f.id|string %}selected{% endif %}>{{ f.field_name }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+      <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+      <option value="Completed" {% if selected_status == 'Completed' %}selected{% endif %}>Completed</option>
+      <option value="Overdue" {% if selected_status == 'Overdue' %}selected{% endif %}>Overdue</option>
+    </select>
+
+    <select name="priority" class="form-control" style="width: auto;" onchange="this.form.submit()">
+      <option value="">All Priorities</option>
+      <option value="Critical" {% if selected_priority == 'Critical' %}selected{% endif %}>Critical</option>
+      <option value="High" {% if selected_priority == 'High' %}selected{% endif %}>High</option>
+      <option value="Medium" {% if selected_priority == 'Medium' %}selected{% endif %}>Medium</option>
+      <option value="Low" {% if selected_priority == 'Low' %}selected{% endif %}>Low</option>
+    </select>
+
+    <select name="sort" class="form-control" style="width: auto;" onchange="this.form.submit()">
+      <option value="start_datetime" {% if selected_sort == 'start_datetime' %}selected{% endif %}>Sort: Start Time</option>
+      <option value="deadline" {% if selected_sort == 'deadline' %}selected{% endif %}>Sort: Deadline</option>
+      <option value="priority" {% if selected_sort == 'priority' %}selected{% endif %}>Sort: Priority</option>
+    </select>
+
+    {% if selected_field or selected_status or selected_priority or selected_sort != 'start_datetime' %}
+    <a href="{{ url_for('tasks') }}" class="btn btn-secondary">Reset</a>
+    {% endif %}
+  </form>
+
+  <button type="button" class="btn btn-primary" onclick="openModal('quickTaskModal')">
+    <span>+</span> Schedule Activity
+  </button>
+</div>
+
+<!-- Task Table -->
+{% if tasks %}
+<div class="table-responsive">
+  <table class="custom-table">
+    <thead>
+      <tr>
+        <th>Task & Field</th>
+        <th>Type & Priority</th>
+        <th>Timing & Deadline</th>
+        <th>Worker & Equipment</th>
+        <th>Dependencies</th>
+        <th>Status</th>
+        <th style="text-align: right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tasks %}
+      <tr style="{% if t.id in conflicted_ids %}background-color: #FFFDF7;{% endif %}">
+        <td>
+          <div style="font-weight: 700; font-size: 14px; color: var(--dark-text); cursor: pointer;" onclick="viewTaskDetails({{ t.id }})">
+            {% if t.id in conflicted_ids %}
+              <span style="color: var(--error-red); font-weight: 800;" title="Conflict detected">&#x26A0;&#xFE0F;</span>
+            {% endif %}
+            {{ t.title }}
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+            &#x1F33E; <strong>{{ t.field_name }}</strong> {% if t.crop_name %}&bull; {{ t.crop_name }}{% endif %}
+          </div>
+        </td>
+        <td>
+          <div style="font-size: 13px; font-weight: 500;">{{ t.task_type }}</div>
+          <span class="badge badge-priority-{{ t.priority.lower() }}" style="margin-top: 3px;">{{ t.priority }}</span>
+        </td>
+        <td style="font-size: 13px;">
+          <div><strong style="color: var(--forest-green);">Start:</strong> {{ t.start_datetime.replace('T', ' ') }}</div>
+          <div style="color: var(--text-muted);">End: {{ t.end_datetime.replace('T', ' ') }}</div>
+          {% if t.deadline %}
+          <div style="font-size: 11px; color: #9A3412; font-weight: 600; margin-top: 2px;">
+            Deadline: {{ t.deadline.replace('T', ' ') }}
+          </div>
+          {% endif %}
+        </td>
+        <td style="font-size: 13px;">
+          <div><strong>Worker:</strong> {{ t.worker_name or 'Unassigned' }}</div>
+          <div style="color: var(--text-muted);"><strong>Equip:</strong> {{ t.equipment_name or 'None' }}</div>
+        </td>
+        <td>
+          {% if t.prereq_count > 0 %}
+          <span class="badge" style="background: #EDE9FE; color: #6D28D9;" title="Task has prerequisite requirements">
+            &#x1F517; {{ t.prereq_count }} Prerequisite(s)
+          </span>
+          {% else %}
+          <span style="font-size: 12px; color: var(--text-light);">Independent</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge badge-{{ t.status.lower().replace(' ', '-') }}">
+            {{ t.status }}
+          </span>
+        </td>
+        <td style="text-align: right;">
+          <div style="display: inline-flex; gap: 6px; align-items: center;">
+            <!-- Start Button (checks prerequisites) -->
+            {% if t.status == 'Pending' %}
+            <form action="{{ url_for('update_task_status', task_id=t.id) }}" method="POST">
+              <input type="hidden" name="status" value="In Progress">
+              <button type="submit" class="btn btn-sm btn-outline-primary" title="Start Task (validates prerequisites)">
+                Start
+              </button>
+            </form>
+            {% endif %}
+
+            <!-- Complete Button -->
+            {% if t.status in ('Pending', 'In Progress', 'Overdue') %}
+            <form action="{{ url_for('update_task_status', task_id=t.id) }}" method="POST">
+              <input type="hidden" name="status" value="Completed">
+              <button type="submit" class="btn btn-sm btn-primary" title="Mark as Completed">
+                &#x2713;
+              </button>
+            </form>
+            {% endif %}
+
+            <button type="button" class="btn btn-sm btn-secondary" onclick="viewTaskDetails({{ t.id }})" title="Inspect Details">
+              View
+            </button>
+
+            <!-- Delete Form -->
+            <form action="{{ url_for('delete_task', task_id=t.id) }}" method="POST" onsubmit="return confirm('Delete task {{ t.title }}?')">
+              <button type="submit" class="btn btn-sm btn-danger" title="Delete Task">&times;</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 48px 24px;">
+  <div style="font-size: 36px; margin-bottom: 12px;">&#x2705;</div>
+  <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-text); margin-bottom: 8px;">No Tasks Found</h3>
+  <p style="font-size: 14px; color: var(--text-muted); max-width: 400px; margin: 0 auto 20px;">
+    No farming activities match your current filter criteria.
+  </p>
+  <button type="button" class="btn btn-primary" onclick="openModal('quickTaskModal')">
+    + Schedule Activity
+  </button>
+</div>
+{% endif %}
+{% endblock %}
